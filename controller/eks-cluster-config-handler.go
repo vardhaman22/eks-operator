@@ -750,21 +750,6 @@ func (h *Handler) updateUpstreamClusterState(ctx context.Context, upstreamSpec *
 		return config, fmt.Errorf("aws services not initialized")
 	}
 
-	if upstreamSpec.IPFamily != "" && config.Spec.IPFamily != upstreamSpec.IPFamily {
-		logrus.Infof("Syncing IPFamily [%s] for cluster [%s]", upstreamSpec.IPFamily, config.Spec.DisplayName)
-		config = config.DeepCopy()
-		config.Spec.IPFamily = upstreamSpec.IPFamily
-		return h.eksCC.Update(config)
-	}
-
-	if strings.EqualFold(config.Spec.IPFamily, "ipv6") {
-		logrus.Infof("Ensuring OIDC Provider exists for IPv6 cluster [%s]", config.Spec.DisplayName)
-		_, err := awsservices.ConfigureOIDCProvider(ctx, awsSVCs.iam, awsSVCs.eks, config)
-		if err != nil {
-			return config, fmt.Errorf("error configuring OIDC provider for IPv6: %w", err)
-		}
-	}
-
 	if config.Spec.KubernetesVersion != nil && upstreamSpec.KubernetesVersion != nil {
 		configVersion, err := semver.ParseTolerant(aws.ToString(config.Spec.KubernetesVersion))
 		if err != nil {
