@@ -217,6 +217,11 @@ Parameters:
     Default: 192.168.64.0/18
     Description: CidrBlock for public subnet 02 within the VPC
 
+  PublicSubnet03Block:
+    Type: String
+    Default: 192.168.128.0/18
+    Description: CidrBlock for public subnet 03 within the VPC. This is used only if the region has more than 2 AZs.
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -227,7 +232,28 @@ Metadata:
           - VpcBlock
           - PublicSubnet01Block
           - PublicSubnet02Block
-          
+          - PublicSubnet03Block
+
+Conditions:
+  Has2Azs:
+    Fn::Or:
+      - Fn::Equals:
+        - {Ref: 'AWS::Region'}
+        - ap-south-1
+      - Fn::Equals:
+        - {Ref: 'AWS::Region'}
+        - ap-northeast-2
+      - Fn::Equals:
+        - {Ref: 'AWS::Region'}
+        - ca-central-1
+      - Fn::Equals:
+        - {Ref: 'AWS::Region'}
+        - cn-north-1
+
+  HasMoreThan2Azs:
+    Fn::Not:
+      - Condition: Has2Azs
+
 Resources:
   #
   # Public VPC
@@ -309,6 +335,24 @@ Resources:
         - Key: Name
           Value:
             Fn::Sub: "${AWS::StackName}/NATGateway02"
+  NATGateway03:
+    Condition: HasMoreThan2Azs
+    Type: AWS::EC2::NatGateway
+    DependsOn:
+      - NatGatewayEIP3
+      - SubnetPublic03
+      - VPCGatewayAttachment
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - NatGatewayEIP3
+          - AllocationId
+      SubnetId:
+        Ref: SubnetPublic03
+      Tags:
+        - Key: Name
+          Value:
+          Fn::Sub: "${AWS::StackName}/NATGateway03"
   #
   # Nat Gateway IPs
   #
@@ -331,7 +375,18 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            Fn::Sub: "${AWS::StackName}/NatGatewayEIP2"
+          Fn::Sub: "${AWS::StackName}/NatGatewayEIP2"
+  NatGatewayEIP3:
+    Condition: HasMoreThan2Azs
+    Type: AWS::EC2::EIP
+    DependsOn:
+      - VPCGatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value:
+          Fn::Sub: "${AWS::StackName}/NatGatewayEIP3"
   #
   # Routing - public subnets
   #
@@ -412,6 +467,30 @@ Resources:
       VpcId:
         Ref: VPC
 
+  SubnetPublic03:
+    Condition: HasMoreThan2Azs
+    Type: AWS::EC2::Subnet
+    DependsOn: IPv6CidrBlock
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - '2'
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock:
+        Ref: PublicSubnet03Block
+      Ipv6CidrBlock: !Select [ 2, !Cidr [ !Select [ 0, !GetAtt VPC.Ipv6CidrBlocks], 8, 64 ]]
+      MapPublicIpOnLaunch: true
+      AssignIpv6AddressOnCreation: true
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: '1'
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName}/SubnetPublic03"
+      VpcId:
+        Ref: VPC
+
   #
   # Public route table associations
   #
@@ -430,10 +509,23 @@ Resources:
       SubnetId:
         Ref: SubnetPublic02
 
+  RouteTableAssociationPublic03:
+    Condition: HasMoreThan2Azs
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: SubnetPublic03
+
 Outputs:
   SubnetIds:
     Description: All public subnets in the VPC
-    Value: !Join [ ",", [ !Ref SubnetPublic01, !Ref SubnetPublic02 ] ]
+    Value:
+      Fn::If:
+      - HasMoreThan2Azs
+      - !Join [ ",", [ !Ref SubnetPublic01, !Ref SubnetPublic02, !Ref SubnetPublic03 ] ]
+      - !Join [ ",", [ !Ref SubnetPublic01, !Ref SubnetPublic02 ] ]
 
   VpcId:
     Description: The VPC Id
