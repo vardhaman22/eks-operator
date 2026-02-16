@@ -352,7 +352,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-          Fn::Sub: "${AWS::StackName}/NATGateway03"
+            Fn::Sub: "${AWS::StackName}/NATGateway03"
   #
   # Nat Gateway IPs
   #
@@ -375,7 +375,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-          Fn::Sub: "${AWS::StackName}/NatGatewayEIP2"
+            Fn::Sub: "${AWS::StackName}/NatGatewayEIP2"
   NatGatewayEIP3:
     Condition: HasMoreThan2Azs
     Type: AWS::EC2::EIP
@@ -386,7 +386,7 @@ Resources:
       Tags:
         - Key: Name
           Value:
-          Fn::Sub: "${AWS::StackName}/NatGatewayEIP3"
+            Fn::Sub: "${AWS::StackName}/NatGatewayEIP3"
   #
   # Routing - public subnets
   #
@@ -591,8 +591,6 @@ Resources:
               Action:
                 - ec2:AssignIpv6Addresses
                 - ec2:UnassignIpv6Addresses
-                - ec2:AssignPrivateIpAddresses
-                - ec2:UnassignPrivateIpAddresses
               Resource: "*"
 
 Outputs:
