@@ -306,7 +306,7 @@ func CreateNodeGroup(ctx context.Context, opts *CreateNodeGroupOptions) (string,
 
 	if aws.ToString(opts.NodeGroup.NodeRole) == "" {
 		if opts.Config.Status.GeneratedNodeRole == "" {
-			finalTemplate, err := templates.GetNodeInstanceRoleTemplate(opts.Config.Spec.Region)
+			finalTemplate, err := templates.GetNodeInstanceRoleTemplate(opts.Config.Spec.Region, opts.Config.Spec.IPFamily)
 			if err != nil {
 				return "", "", fmt.Errorf("error getting node instance role template: %v", err)
 			}

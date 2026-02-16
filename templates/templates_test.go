@@ -66,7 +66,7 @@ var _ = Describe("Templates", func() {
 
 		Describe("GetNodeInstanceRoleTemplate", func() {
 			It("should generate a valid node instance role template for us-east-1", func() {
-				tmpl, err := GetNodeInstanceRoleTemplate("us-east-1")
+				tmpl, err := GetNodeInstanceRoleTemplate("us-east-1", "ipv4")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tmpl).To(ContainSubstring("NodeInstanceRole"))
 				Expect(tmpl).To(ContainSubstring("ec2.amazonaws.com"))
@@ -76,14 +76,14 @@ var _ = Describe("Templates", func() {
 			})
 
 			It("should generate a valid node instance role template for cn-north-1", func() {
-				tmpl, err := GetNodeInstanceRoleTemplate("cn-north-1")
+				tmpl, err := GetNodeInstanceRoleTemplate("cn-north-1", "ipv4")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tmpl).To(ContainSubstring("ec2.amazonaws.com.cn"))
 				Expect(tmpl).To(ContainSubstring("arn:aws-cn:iam::aws:policy/AmazonEKSWorkerNodePolicy"))
 			})
 
 			It("should generate a valid node instance role template for us-gov-west-1", func() {
-				tmpl, err := GetNodeInstanceRoleTemplate("us-gov-west-1")
+				tmpl, err := GetNodeInstanceRoleTemplate("us-gov-west-1", "ipv4")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tmpl).To(ContainSubstring("ec2.amazonaws.com"))
 				Expect(tmpl).To(ContainSubstring("arn:aws-us-gov:iam::aws:policy/AmazonEKSWorkerNodePolicy"))
